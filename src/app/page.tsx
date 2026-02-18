@@ -10,7 +10,7 @@ export default function Home() {
       <main style={{ maxWidth: 980, margin: "18px auto", padding: 16 }}>
         <div className="card" style={{ padding: 18, display: "grid", gap: 14 }}>
           <Image
-            src="/brand/logo-horizontal.jpg"
+            src="/brand/logo-horizontal.png"
             alt="ShihTzuz"
             width={900}
             height={360}

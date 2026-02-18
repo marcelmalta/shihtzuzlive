@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import { QRCodeCanvas } from "qrcode.react";
 
@@ -181,11 +182,14 @@ export default function LivePage() {
     <main className="live-page">
       <header className="live-topbar">
         <div className="brand">
-          <span className="brand-mark" aria-hidden />
-          <div className="brand-copy">
-            <strong>SHIHTZUZ LIVE WALL</strong>
-            <small>Cuidados | Rotina | Diversao</small>
-          </div>
+          <Image
+            src="/brand/logo-horizontal.png"
+            alt="ShihTZuz"
+            width={360}
+            height={84}
+            className="brand-logo"
+            priority
+          />
         </div>
 
         <div className="topbar-right">
@@ -298,38 +302,14 @@ export default function LivePage() {
           min-width: 0;
           display: flex;
           align-items: center;
-          gap: 12px;
         }
 
-        .brand-mark {
-          width: 36px;
-          height: 36px;
-          border-radius: 12px;
-          flex: 0 0 auto;
-          background: linear-gradient(135deg, var(--gold-1), var(--gold-2));
-          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
-          border: 1px solid rgba(255, 255, 255, 0.28);
-        }
-
-        .brand-copy {
-          min-width: 0;
-          display: flex;
-          flex-direction: column;
-          line-height: 1.05;
-          gap: 4px;
-        }
-
-        .brand-copy strong {
-          font-size: clamp(14px, 2vw, 21px);
-          letter-spacing: 0.06em;
-          color: #ffe8b0;
-          white-space: nowrap;
-        }
-
-        .brand-copy small {
-          font-size: clamp(11px, 1.1vw, 14px);
-          opacity: 0.82;
-          white-space: nowrap;
+        .brand-logo {
+          width: clamp(158px, 26vw, 340px);
+          height: auto;
+          max-width: 58vw;
+          object-fit: contain;
+          filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.45));
         }
 
         .topbar-right {
@@ -619,19 +599,9 @@ export default function LivePage() {
             gap: 8px;
           }
 
-          .brand-mark {
-            width: 30px;
-            height: 30px;
-            border-radius: 10px;
-          }
-
-          .brand-copy strong {
-            letter-spacing: 0.04em;
-            font-size: clamp(12px, 4vw, 18px);
-          }
-
-          .brand-copy small {
-            display: none;
+          .brand-logo {
+            width: clamp(138px, 48vw, 230px);
+            max-width: 52vw;
           }
 
           .topbar-right {
@@ -723,6 +693,11 @@ export default function LivePage() {
         @media (max-width: 540px) {
           .count-pill {
             display: none;
+          }
+
+          .brand-logo {
+            width: clamp(128px, 56vw, 210px);
+            max-width: 56vw;
           }
 
           .live-page {
