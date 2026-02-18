@@ -10,23 +10,24 @@ type WallPhoto = {
   display_name: string | null;
   instagram: string | null;
   caption: string | null;
+  city: string | null;
+  state: string | null;
+  pet_age: string | null;
   storage_path: string;
   status: "pending" | "approved" | "rejected";
-  // se você já tiver facebook/tiktok etc na tabela, adicione aqui depois
 };
 
 export default function LivePage() {
   const supabase = useMemo(() => supabaseBrowser(), []);
   const bucket = process.env.NEXT_PUBLIC_BUCKET || "shihtzu-wall";
 
+  // URL pública do submit (domínio/Vercel). Se não setar, usa /submit do mesmo host.
   const submitUrl =
     process.env.NEXT_PUBLIC_SUBMIT_URL ||
-    (typeof window !== "undefined"
-      ? `${window.location.origin}/submit`
-      : "/submit");
+    (typeof window !== "undefined" ? `${window.location.origin}/submit` : "/submit");
 
-  // duração das fotos (ms). default 10s
-  const ROTATE_MS = Number(process.env.NEXT_PUBLIC_LIVE_ROTATE_MS || 10000);
+  // duração de cada foto (ms) — pode ajustar por env ou aqui
+  const SLIDE_MS = Number(process.env.NEXT_PUBLIC_SLIDE_MS || 7000);
 
   const [queue, setQueue] = useState<WallPhoto[]>([]);
   const [current, setCurrent] = useState<WallPhoto | null>(null);
@@ -34,7 +35,7 @@ export default function LivePage() {
 
   const timerRef = useRef<any>(null);
 
-  function getPublicUrl(path: string) {
+  async function getUrl(path: string) {
     const { data } = supabase.storage.from(bucket).getPublicUrl(path);
     return data.publicUrl;
   }
@@ -54,32 +55,27 @@ export default function LivePage() {
     }
   }
 
+  // realtime
   useEffect(() => {
     loadApproved();
 
     const ch = supabase
       .channel("wall-photos")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "wall_photos" },
-        (payload) => {
-          const row = (payload.new || payload.old) as WallPhoto;
-          if (!row) return;
+      .on("postgres_changes", { event: "*", schema: "public", table: "wall_photos" }, (payload) => {
+        const row = (payload.new || payload.old) as WallPhoto;
+        if (!row) return;
 
-          if (row.status === "approved") {
-            setQueue((q) => {
-              const exists = q.some((x) => x.id === row.id);
-              const next = exists
-                ? q.map((x) => (x.id === row.id ? row : x))
-                : [row, ...q];
-              return next.slice(0, 120);
-            });
-            setCurrent((c) => c || row);
-          } else {
-            setQueue((q) => q.filter((x) => x.id !== row.id));
-          }
+        if (row.status === "approved") {
+          setQueue((q) => {
+            const exists = q.some((x) => x.id === row.id);
+            const next = exists ? q.map((x) => (x.id === row.id ? row : x)) : [row, ...q];
+            return next.slice(0, 120);
+          });
+          setCurrent((c) => c || row);
+        } else {
+          setQueue((q) => q.filter((x) => x.id !== row.id));
         }
-      )
+      })
       .subscribe();
 
     return () => {
@@ -88,6 +84,7 @@ export default function LivePage() {
     };
   }, [supabase]);
 
+  // slideshow
   useEffect(() => {
     if (timerRef.current) clearInterval(timerRef.current);
 
@@ -98,319 +95,288 @@ export default function LivePage() {
         const idx = queue.findIndex((x) => x.id === c.id);
         return queue[(idx + 1) % queue.length] || queue[0];
       });
-    }, ROTATE_MS);
+    }, SLIDE_MS);
 
     return () => timerRef.current && clearInterval(timerRef.current);
-  }, [queue, ROTATE_MS]);
+  }, [queue, SLIDE_MS]);
 
+  // load image url
   useEffect(() => {
-    if (!current) return setImgUrl("");
-    setImgUrl(getPublicUrl(current.storage_path));
+    (async () => {
+      if (!current) return setImgUrl("");
+      setImgUrl(await getUrl(current.storage_path));
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current?.id]);
 
-  const name = current?.display_name || "Seguidor";
-  const ig = current?.instagram ? `@${current.instagram.replace("@", "")}` : "";
+  const metaLine = buildMetaLine(current);
 
   return (
-    <div className="wrap">
-      <header className="topbar">
-        <div className="brand">
-          <img className="brandLogo" src="/brand/logo-badge.png" alt="ShihTzuz" />
-          <div className="brandText">
-            <div className="brandName">ShihTzuz</div>
-            <div className="brandTag">Cuidados • Rotina • Diversão</div>
+    <div style={wrap}>
+      {/* TOPBAR */}
+      <div style={topBar}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={brandDot} />
+          <div>
+            <div style={{ fontWeight: 900, letterSpacing: 0.6 }}>SHIHTZUZ • LIVE WALL</div>
+            <div style={{ fontSize: 13, opacity: 0.78 }}>Cuidados • Rotina • Diversão</div>
           </div>
         </div>
 
-        <div className="topActions">
-          <a className="btn" href="/submit">
+        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          <a href="/submit" style={ctaBtn}>
             Enviar foto
           </a>
-          <a className="livePill" href="/live" aria-label="Live">
-            Live
-          </a>
+          <div style={pill}>Aprovados: {queue.length}</div>
         </div>
-      </header>
+      </div>
 
-      <main className="stage">
-        <div className="frame">
-          {/* imagem */}
-          {imgUrl ? (
-            <img className="photo" src={imgUrl} alt="Foto de Shih Tzu" />
-          ) : (
-            <div className="empty">Aguardando fotos aprovadas…</div>
-          )}
+      {/* STAGE */}
+      <div style={stage}>
+        {/* IMAGEM */}
+        {imgUrl ? (
+          <img src={imgUrl} alt="Shih Tzu" style={img} />
+        ) : (
+          <div style={{ color: "#cfd7e6" }}>Aguardando fotos aprovadas…</div>
+        )}
 
-          {/* legenda (mobile: fixa embaixo, desktop: elegante) */}
-          {current && (
-            <div className="caption">
-              <div className="captionLine1">
-                <span className="captionName">{name}</span>
-                {ig ? <span className="captionHandle"> • {ig}</span> : null}
+        {/* CAPTION (centralizada e elegante) */}
+        {current && (
+          <div style={captionWrap}>
+            <div style={captionCard}>
+              <div style={capTopRow}>
+                <div style={capName}>{current.display_name || "Seguidor"}</div>
+
+                {current.instagram ? (
+                  <div style={capHandle}>
+                    {current.instagram.startsWith("@") ? current.instagram : `@${current.instagram}`}
+                  </div>
+                ) : null}
               </div>
-              {current.caption ? (
-                <div className="captionLine2">{current.caption}</div>
-              ) : null}
-            </div>
-          )}
 
-          {/* QR (só desktop) */}
-          <aside className="qr">
-            <div className="qrTitle">Envie a foto do seu Shih Tzu</div>
-            <div className="qrCode">
-              <QRCodeCanvas value={submitUrl} size={170} includeMargin />
+              {metaLine ? <div style={capMeta}>{metaLine}</div> : null}
+
+              {current.caption ? <div style={capText}>{current.caption}</div> : null}
             </div>
-            <div className="qrUrl">{submitUrl.replace("https://", "").replace("http://", "")}</div>
-          </aside>
+          </div>
+        )}
+
+        {/* QR (desktop/tablet somente) */}
+        <div style={qrWrap} className="qrOnly">
+          <div style={qrTitle}>Envie a foto do seu Shih Tzu</div>
+
+          {/* QR mais nítido: fundo branco + margem + tamanho maior */}
+          <div style={qrCanvasFrame}>
+            <QRCodeCanvas value={submitUrl} size={200} includeMargin bgColor="#ffffff" fgColor="#000000" />
+          </div>
+
+          <div style={qrUrl}>{submitUrl.replace(/^https?:\/\//, "")}</div>
+          <div style={qrHint}>Aponte a câmera • abre o formulário</div>
         </div>
-      </main>
+      </div>
 
-      <footer className="footer">
-        <span>OBS Browser Source • /live</span>
-        <span className="sep">•</span>
-        <span>Troca: {(ROTATE_MS / 1000).toFixed(0)}s</span>
-        <span className="sep">•</span>
-        <span>Aprovados: {queue.length}</span>
-      </footer>
+      {/* FOOTER */}
+      <div style={footer}>
+        <span style={{ opacity: 0.75 }}>OBS Browser Source • /live</span>
+        <span style={{ opacity: 0.75 }}>Troca automática: {Math.round(SLIDE_MS / 1000)}s</span>
+      </div>
 
-      <style jsx>{`
-        .wrap {
-          width: 100vw;
-          height: 100vh;
-          display: grid;
-          grid-template-rows: 64px 1fr 34px;
-          background: radial-gradient(1200px 700px at 50% 0%, #101a28 0%, #070a0f 60%, #05070b 100%);
-          color: #fff;
-        }
-
-        .topbar {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 0 14px;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-          background: rgba(5, 7, 11, 0.55);
-          backdrop-filter: blur(10px);
-        }
-
-        .brand {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          min-width: 0;
-        }
-        .brandLogo {
-          width: 36px;
-          height: 36px;
-          border-radius: 10px;
-          flex: 0 0 auto;
-        }
-        .brandText {
-          display: grid;
-          gap: 2px;
-          min-width: 0;
-        }
-        .brandName {
-          font-weight: 900;
-          letter-spacing: 0.5px;
-          font-size: 18px;
-          line-height: 1;
-        }
-        .brandTag {
-          font-size: 12px;
-          opacity: 0.85;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-
-        .topActions {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
-        .btn {
-          text-decoration: none;
-          color: #0b0f14;
-          background: linear-gradient(180deg, #f4d58a 0%, #d7b35f 100%);
-          padding: 10px 12px;
-          border-radius: 14px;
-          font-weight: 900;
-          box-shadow: 0 14px 30px rgba(0, 0, 0, 0.35);
-          border: 1px solid rgba(255, 255, 255, 0.15);
-        }
-        .livePill {
-          text-decoration: none;
-          color: #fff;
-          padding: 8px 10px;
-          border-radius: 999px;
-          border: 1px solid rgba(255, 255, 255, 0.18);
-          background: rgba(255, 255, 255, 0.06);
-          font-weight: 800;
-        }
-
-        .stage {
-          display: grid;
-          place-items: center;
-          overflow: hidden;
-          padding: 14px;
-        }
-
-        .frame {
-          width: min(1200px, 100%);
-          height: min(760px, 100%);
-          position: relative;
-          display: grid;
-          place-items: center;
-          border-radius: 22px;
-          background: rgba(0, 0, 0, 0.25);
-          border: 1px solid rgba(255, 255, 255, 0.08);
-          box-shadow: 0 30px 90px rgba(0, 0, 0, 0.55);
-          overflow: hidden;
-        }
-
-        .photo {
-          width: 100%;
-          height: 100%;
-          object-fit: contain;
-          background: rgba(0, 0, 0, 0.45);
-        }
-
-        .empty {
-          color: rgba(255, 255, 255, 0.85);
-          font-weight: 700;
-        }
-
-        .caption {
-          position: absolute;
-          left: 14px;
-          right: 14px;
-          bottom: 14px;
-          padding: 12px 14px;
-          border-radius: 16px;
-          background: linear-gradient(180deg, rgba(0, 0, 0, 0.15) 0%, rgba(0, 0, 0, 0.70) 60%, rgba(0, 0, 0, 0.72) 100%);
-          border: 1px solid rgba(255, 255, 255, 0.12);
-          backdrop-filter: blur(6px);
-        }
-        .captionLine1 {
-          font-size: 18px;
-          font-weight: 900;
-          line-height: 1.1;
-        }
-        .captionName {
-          color: #ffffff;
-        }
-        .captionHandle {
-          opacity: 0.9;
-          font-weight: 800;
-          color: #f4d58a;
-        }
-        .captionLine2 {
-          margin-top: 6px;
-          font-size: 14px;
-          opacity: 0.92;
-          line-height: 1.25;
-        }
-
-        .qr {
-          position: absolute;
-          top: 14px;
-          right: 14px;
-          width: 260px;
-          padding: 14px;
-          border-radius: 18px;
-          background: rgba(0, 0, 0, 0.55);
-          border: 1px solid rgba(255, 255, 255, 0.12);
-          backdrop-filter: blur(8px);
-          text-align: center;
-        }
-        .qrTitle {
-          font-weight: 900;
-          letter-spacing: 0.4px;
-          margin-bottom: 10px;
-          font-size: 13px;
-          opacity: 0.95;
-        }
-        .qrCode {
-          display: grid;
-          place-items: center;
-          background: #fff;
-          border-radius: 14px;
-          padding: 8px;
-          margin: 0 auto;
-          width: fit-content;
-        }
-        .qrUrl {
-          margin-top: 10px;
-          font-size: 12px;
-          opacity: 0.9;
-          word-break: break-word;
-        }
-
-        .footer {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 10px;
-          padding: 0 12px;
-          border-top: 1px solid rgba(255, 255, 255, 0.08);
-          background: rgba(5, 7, 11, 0.55);
-          backdrop-filter: blur(10px);
-          font-size: 12px;
-          opacity: 0.8;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-        .sep {
-          opacity: 0.35;
-        }
-
-        /* ===== MOBILE ===== */
+      {/* CSS rápido p/ esconder QR no mobile */}
+      <style jsx global>{`
         @media (max-width: 820px) {
-          .wrap {
-            grid-template-rows: 58px 1fr 34px;
-          }
-          .btn {
-            padding: 9px 10px;
-            border-radius: 14px;
-          }
-          .frame {
-            height: 100%;
-            border-radius: 18px;
-          }
-
-          /* QR some no mobile */
-          .qr {
-            display: none;
-          }
-
-          /* legenda mais compacta */
-          .caption {
-            left: 10px;
-            right: 10px;
-            bottom: 10px;
-            padding: 10px 12px;
-            border-radius: 14px;
-          }
-          .captionLine1 {
-            font-size: 16px;
-          }
-          .captionLine2 {
-            font-size: 13px;
-          }
-        }
-
-        /* ===== MUITO PEQUENO ===== */
-        @media (max-width: 420px) {
-          .brandName {
-            font-size: 16px;
-          }
-          .brandTag {
-            display: none;
+          .qrOnly {
+            display: none !important;
           }
         }
       `}</style>
     </div>
   );
 }
+
+function buildMetaLine(current: WallPhoto | null) {
+  if (!current) return "";
+  const parts: string[] = [];
+
+  const cityState = [current.city, current.state].filter(Boolean).join(" • ");
+  if (cityState) parts.push(cityState);
+
+  if (current.pet_age) parts.push(`Idade do pet: ${current.pet_age}`);
+
+  return parts.join("  |  ");
+}
+
+// ===== styles =====
+
+const wrap: React.CSSProperties = {
+  width: "100vw",
+  height: "100vh",
+  background: "radial-gradient(1200px 700px at 20% 10%, rgba(255, 209, 102, 0.10), transparent 55%), #0b0f14",
+  color: "#fff",
+  display: "grid",
+  gridTemplateRows: "64px 1fr 36px",
+};
+
+const topBar: React.CSSProperties = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  padding: "0 16px",
+  background: "linear-gradient(180deg, rgba(18,28,40,.92), rgba(10,15,22,.86))",
+  borderBottom: "1px solid rgba(255,255,255,.10)",
+  backdropFilter: "blur(10px)",
+};
+
+const brandDot: React.CSSProperties = {
+  width: 34,
+  height: 34,
+  borderRadius: 12,
+  background: "linear-gradient(180deg, #f5d37a, #b9852d)",
+  boxShadow: "0 10px 28px rgba(0,0,0,.35)",
+  border: "1px solid rgba(255,255,255,.18)",
+};
+
+const ctaBtn: React.CSSProperties = {
+  color: "#0b0f14",
+  background: "linear-gradient(180deg, #f5d37a, #c58d2f)",
+  padding: "10px 14px",
+  borderRadius: 14,
+  textDecoration: "none",
+  fontWeight: 900,
+  letterSpacing: 0.4,
+  boxShadow: "0 14px 34px rgba(0,0,0,.35)",
+  border: "1px solid rgba(255,255,255,.18)",
+};
+
+const pill: React.CSSProperties = {
+  fontSize: 13,
+  padding: "8px 10px",
+  borderRadius: 999,
+  background: "rgba(0,0,0,.35)",
+  border: "1px solid rgba(255,255,255,.12)",
+  backdropFilter: "blur(8px)",
+};
+
+const stage: React.CSSProperties = {
+  position: "relative",
+  display: "grid",
+  placeItems: "center",
+  overflow: "hidden",
+  padding: 18,
+};
+
+const img: React.CSSProperties = {
+  width: "min(92vw, 1180px)",
+  height: "min(78vh, 620px)",
+  objectFit: "cover",
+  borderRadius: 22,
+  boxShadow: "0 34px 120px rgba(0,0,0,.62)",
+  border: "1px solid rgba(255,255,255,.10)",
+};
+
+const captionWrap: React.CSSProperties = {
+  position: "absolute",
+  left: 0,
+  right: 0,
+  bottom: 16,
+  display: "grid",
+  placeItems: "center",
+  padding: "0 16px",
+};
+
+const captionCard: React.CSSProperties = {
+  width: "min(1060px, 92vw)",
+  padding: "14px 16px",
+  borderRadius: 18,
+  background: "linear-gradient(180deg, rgba(0,0,0,.55), rgba(0,0,0,.42))",
+  border: "1px solid rgba(255,255,255,.14)",
+  backdropFilter: "blur(10px)",
+  boxShadow: "0 18px 60px rgba(0,0,0,.45)",
+};
+
+const capTopRow: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 12,
+};
+
+const capName: React.CSSProperties = {
+  fontWeight: 1000,
+  fontSize: 20,
+  letterSpacing: 0.2,
+};
+
+const capHandle: React.CSSProperties = {
+  fontWeight: 800,
+  fontSize: 14,
+  opacity: 0.9,
+  padding: "6px 10px",
+  borderRadius: 999,
+  background: "rgba(255, 209, 102, 0.14)",
+  border: "1px solid rgba(255, 209, 102, 0.28)",
+};
+
+const capMeta: React.CSSProperties = {
+  marginTop: 6,
+  fontSize: 13,
+  opacity: 0.82,
+};
+
+const capText: React.CSSProperties = {
+  marginTop: 8,
+  fontSize: 16,
+  opacity: 0.95,
+  lineHeight: 1.25,
+};
+
+const qrWrap: React.CSSProperties = {
+  position: "absolute",
+  top: 16,
+  right: 16,
+  width: 270,
+  padding: 14,
+  borderRadius: 18,
+  background: "linear-gradient(180deg, rgba(0,0,0,.55), rgba(0,0,0,.40))",
+  border: "1px solid rgba(255,255,255,.14)",
+  backdropFilter: "blur(10px)",
+  textAlign: "center",
+  boxShadow: "0 18px 60px rgba(0,0,0,.45)",
+};
+
+const qrTitle: React.CSSProperties = {
+  fontSize: 14,
+  fontWeight: 900,
+  letterSpacing: 0.5,
+  marginBottom: 10,
+};
+
+const qrCanvasFrame: React.CSSProperties = {
+  background: "#ffffff",
+  borderRadius: 14,
+  padding: 10,
+  display: "inline-block",
+  boxShadow: "0 10px 28px rgba(0,0,0,.35)",
+};
+
+const qrUrl: React.CSSProperties = {
+  marginTop: 10,
+  fontSize: 12.5,
+  opacity: 0.9,
+  fontWeight: 800,
+};
+
+const qrHint: React.CSSProperties = {
+  marginTop: 6,
+  fontSize: 12,
+  opacity: 0.75,
+};
+
+const footer: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  padding: "0 16px",
+  borderTop: "1px solid rgba(255,255,255,.10)",
+  background: "rgba(15, 23, 35, .85)",
+  backdropFilter: "blur(10px)",
+};
