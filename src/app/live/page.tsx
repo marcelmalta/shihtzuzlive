@@ -43,6 +43,14 @@ function formatPetAge(age: string | number | null | undefined) {
   return text ? `Idade: ${text}` : "";
 }
 
+function truncateText(value: string | null | undefined, maxChars: number) {
+  if (!value) return "";
+  const normalized = value.trim().replace(/\s+/g, " ");
+  if (!normalized) return "";
+  if (normalized.length <= maxChars) return normalized;
+  return `${normalized.slice(0, maxChars).trimEnd()}...`;
+}
+
 export default function LivePage() {
   const supabase = useMemo(() => supabaseBrowser(), []);
   const bucket = process.env.NEXT_PUBLIC_BUCKET || "shihtzu-wall";
@@ -58,10 +66,21 @@ export default function LivePage() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    const syncViewport = () => setIsDesktopQr(window.innerWidth > 820);
+    const syncViewport = () => {
+      const isWide = window.matchMedia("(min-width: 821px)").matches;
+      const hasFinePointer = window.matchMedia("(pointer: fine)").matches;
+      const canHover = window.matchMedia("(hover: hover)").matches;
+      setIsDesktopQr(isWide && hasFinePointer && canHover);
+    };
+
     syncViewport();
     window.addEventListener("resize", syncViewport);
-    return () => window.removeEventListener("resize", syncViewport);
+    window.addEventListener("orientationchange", syncViewport);
+
+    return () => {
+      window.removeEventListener("resize", syncViewport);
+      window.removeEventListener("orientationchange", syncViewport);
+    };
   }, []);
 
   async function getPublicUrl(path: string) {
@@ -150,13 +169,13 @@ export default function LivePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current?.id]);
 
-  const ownerName = current?.display_name?.trim() || "Tutor(a)";
+  const ownerName = current?.display_name?.trim() || "";
   const instagram = formatHandle(current?.instagram);
-  const petName = current?.pet_name?.trim() || "";
-  const caption = current?.caption?.trim() || "";
+  const petName = current?.pet_name?.trim() || "Shih Tzu";
+  const caption = truncateText(current?.caption, 50);
   const cityState = formatCityState(current?.city, current?.state);
   const petAge = formatPetAge(current?.pet_age);
-  const badge = [cityState, petAge].filter(Boolean).join("  •  ");
+  const ownerCredit = [ownerName, instagram].filter(Boolean).join("  ");
 
   return (
     <main className="live-page">
@@ -190,17 +209,20 @@ export default function LivePage() {
             {current && (
               <div className="photo-overlay">
                 <div className="overlay-line-1">
-                  <div className="owner-group">
-                    <span className="owner-name">{ownerName}</span>
-                    {instagram ? <span className="owner-instagram">{instagram}</span> : null}
+                  <div className="pet-main">
+                    <span className="pet-title">{petName}</span>
                   </div>
-                  {badge ? <span className="meta-badge">{badge}</span> : null}
+
+                  <div className="meta-chips">
+                    {cityState ? <span className="meta-chip">{cityState}</span> : null}
+                    {petAge ? <span className="meta-chip">{petAge}</span> : null}
+                  </div>
                 </div>
 
-                {(petName || caption) && (
+                {(caption || ownerCredit) && (
                   <div className="overlay-line-2">
-                    {petName ? <span className="pet-name">{petName}</span> : null}
                     {caption ? <span className="caption">{caption}</span> : null}
+                    {ownerCredit ? <span className="owner-credit">{ownerCredit}</span> : null}
                   </div>
                 )}
               </div>
@@ -425,74 +447,73 @@ export default function LivePage() {
           display: flex;
           align-items: center;
           justify-content: space-between;
+          gap: 14px;
+          min-width: 0;
+        }
+
+        .pet-main {
+          min-width: 0;
+        }
+
+        .pet-title {
+          font-size: clamp(22px, 2.8vw, 40px);
+          font-weight: 900;
+          letter-spacing: 0.02em;
+          line-height: 1.02;
+          color: #ffe5a4;
+        }
+
+        .meta-chips {
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          gap: 8px;
+          flex-wrap: wrap;
+          min-width: 0;
+        }
+
+        .meta-chip {
+          font-size: clamp(13px, 1.1vw, 18px);
+          font-weight: 700;
+          line-height: 1;
+          padding: 8px 11px;
+          border-radius: 999px;
+          border: 1px solid rgba(245, 211, 122, 0.6);
+          color: #fff2d0;
+          background: rgba(0, 0, 0, 0.48);
+        }
+
+        .overlay-line-2 {
+          margin-top: 10px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
           gap: 12px;
           min-width: 0;
         }
 
-        .owner-group {
+        .caption {
+          flex: 1 1 auto;
           min-width: 0;
-          display: flex;
-          align-items: baseline;
-          gap: 10px;
-          flex-wrap: wrap;
-        }
-
-        .owner-name {
-          font-size: clamp(20px, 2.3vw, 34px);
-          font-weight: 900;
-          line-height: 1;
-          letter-spacing: 0.015em;
-        }
-
-        .owner-instagram {
-          font-size: clamp(15px, 1.4vw, 23px);
-          font-weight: 800;
-          color: #ffe2a5;
-          line-height: 1.05;
-        }
-
-        .meta-badge {
-          flex: 0 0 auto;
-          max-width: min(52vw, 520px);
-          text-align: right;
-          font-size: clamp(14px, 1.25vw, 20px);
+          font-size: clamp(15px, 1.35vw, 22px);
           font-weight: 700;
-          line-height: 1.1;
-          padding: 7px 11px;
-          border-radius: 999px;
-          border: 1px solid rgba(245, 211, 122, 0.5);
-          background: rgba(0, 0, 0, 0.42);
+          line-height: 1.18;
+          color: #fff6e0;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
         }
 
-        .overlay-line-2 {
-          margin-top: 9px;
-          display: flex;
-          align-items: baseline;
-          gap: 10px;
-          min-width: 0;
-        }
-
-        .pet-name {
+        .owner-credit {
           flex: 0 0 auto;
-          font-size: clamp(18px, 1.8vw, 30px);
-          font-weight: 900;
-          color: #ffd988;
-          line-height: 1.1;
-        }
-
-        .caption {
-          min-width: 0;
-          font-size: clamp(15px, 1.45vw, 24px);
+          max-width: 38%;
+          font-size: clamp(12px, 1vw, 16px);
           font-weight: 600;
-          line-height: 1.22;
-          color: #fff6e0;
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
+          letter-spacing: 0.01em;
+          color: rgba(255, 236, 194, 0.88);
+          white-space: nowrap;
           overflow: hidden;
+          text-overflow: ellipsis;
         }
 
         .live-qr {
@@ -555,7 +576,7 @@ export default function LivePage() {
             width: 198px;
           }
 
-          .meta-badge {
+          .meta-chips {
             max-width: 48vw;
           }
         }
@@ -656,26 +677,41 @@ export default function LivePage() {
           }
 
           .overlay-line-1 {
+            align-items: flex-start;
+            flex-direction: column;
             gap: 8px;
           }
 
-          .owner-group {
-            gap: 7px;
+          .pet-title {
+            font-size: clamp(20px, 6vw, 30px);
           }
 
-          .meta-badge {
+          .meta-chips {
+            justify-content: flex-start;
+          }
+
+          .meta-chip {
             font-size: 12px;
-            max-width: 46%;
-            padding: 5px 8px;
+            padding: 6px 8px;
           }
 
           .overlay-line-2 {
             margin-top: 7px;
-            gap: 7px;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 6px;
           }
 
           .caption {
-            -webkit-line-clamp: 3;
+            white-space: normal;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+          }
+
+          .owner-credit {
+            max-width: 100%;
+            font-size: 11px;
           }
 
           .live-footer {
@@ -693,24 +729,15 @@ export default function LivePage() {
             grid-template-rows: 64px 1fr 30px;
           }
 
-          .overlay-line-1 {
-            align-items: flex-start;
-            flex-direction: column;
-          }
-
-          .meta-badge {
-            max-width: 100%;
-            width: fit-content;
-            text-align: left;
-          }
-
-          .overlay-line-2 {
-            flex-direction: column;
-            align-items: flex-start;
-          }
-
           .caption {
             width: 100%;
+          }
+        }
+
+        @media (hover: none), (pointer: coarse) {
+          .qrOnly,
+          .live-qr {
+            display: none !important;
           }
         }
       `}</style>
