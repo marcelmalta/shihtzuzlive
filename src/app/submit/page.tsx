@@ -15,6 +15,18 @@ type FrameOptions = {
   outputH: number;
 };
 
+type WallPhotoInsert = {
+  display_name?: string | null;
+  instagram?: string | null;
+  pet_name?: string | null;
+  pet_age?: string | null;
+  city?: string | null;
+  state?: string | null;
+  caption?: string | null;
+  storage_path: string;
+  status?: "pending";
+};
+
 const DEFAULT_MAX_MB = 3;
 const DEFAULT_MAX_W = 1920;
 const DEFAULT_OUTPUT_W = 1920;
@@ -37,6 +49,56 @@ function replaceExt(filename: string, newExt: string) {
 
 function cleanHandle(s: string) {
   return s.trim().replace(/^@+/, "");
+}
+
+function getErrorText(error: unknown) {
+  if (!error) return "";
+
+  if (error instanceof Error) {
+    return error.message || "";
+  }
+
+  if (typeof error === "object") {
+    const maybe = error as {
+      message?: unknown;
+      details?: unknown;
+      hint?: unknown;
+    };
+
+    return [maybe.message, maybe.details, maybe.hint]
+      .filter((part): part is string => typeof part === "string" && part.trim().length > 0)
+      .join(" | ");
+  }
+
+  return String(error);
+}
+
+function extractMissingColumn(errorText: string) {
+  const patterns = [
+    /could not find the ['"]([^'"]+)['"] column/i,
+    /column ['"]?([a-zA-Z0-9_.]+)['"]? does not exist/i,
+    /unknown column ['"]?([a-zA-Z0-9_.]+)['"]?/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = errorText.match(pattern);
+    const rawColumn = match?.[1]?.trim();
+    if (!rawColumn) continue;
+    return rawColumn.split(".").pop() ?? rawColumn;
+  }
+
+  return null;
+}
+
+function formatSubmitError(error: unknown) {
+  const detail = getErrorText(error);
+  if (!detail) return "Falhou. Tente novamente.";
+
+  if (/row-level security|permission denied/i.test(detail)) {
+    return "Sem permissao para salvar. Verifique as politicas de INSERT no Supabase.";
+  }
+
+  return detail;
 }
 
 async function loadImageFromFile(file: Blob) {
@@ -223,6 +285,48 @@ export default function SubmitPage() {
     });
   }
 
+  const insertWallPhoto = useCallback(
+    async (initialPayload: WallPhotoInsert) => {
+      const payload: WallPhotoInsert = { ...initialPayload };
+
+      for (let attempt = 0; attempt < 8; attempt += 1) {
+        const { error } = await supabase.from("wall_photos").insert(payload);
+
+        if (!error) return;
+
+        const errorText = getErrorText(error);
+        const missingColumn = extractMissingColumn(errorText);
+
+        if (missingColumn === "storage_path") {
+          throw new Error(
+            "A tabela wall_photos nao possui a coluna storage_path. Rode o schema mais recente.",
+          );
+        }
+
+        if (missingColumn && missingColumn in payload) {
+          delete payload[missingColumn as keyof WallPhotoInsert];
+          continue;
+        }
+
+        const statusMismatch =
+          /status|pending|approved|rejected/i.test(errorText) &&
+          (/invalid input value for enum/i.test(errorText) ||
+            /invalid input syntax/i.test(errorText) ||
+            /violates check constraint/i.test(errorText));
+
+        if (statusMismatch && "status" in payload) {
+          delete payload.status;
+          continue;
+        }
+
+        throw error;
+      }
+
+      throw new Error("Nao foi possivel salvar no banco com o schema atual.");
+    },
+    [supabase],
+  );
+
   async function handleSubmit() {
     setOkMsg("");
     setErrMsg("");
@@ -240,6 +344,8 @@ export default function SubmitPage() {
     }
 
     setLoading(true);
+    let uploadedPath: string | null = null;
+    let dbSaved = false;
 
     try {
       const compressed = await compressIfNeeded(file);
@@ -264,10 +370,11 @@ export default function SubmitPage() {
       });
 
       if (upload.error) throw upload.error;
+      uploadedPath = path;
 
       const finalCaption = caption.trim().slice(0, MAX_CAPTION_CHARS);
 
-      const insert = await supabase.from("wall_photos").insert({
+      await insertWallPhoto({
         display_name: finalPetName,
         instagram: instagram.trim() ? cleanHandle(instagram) : null,
         pet_name: finalPetName,
@@ -278,8 +385,7 @@ export default function SubmitPage() {
         storage_path: path,
         status: "pending",
       });
-
-      if (insert.error) throw insert.error;
+      dbSaved = true;
 
       setOkMsg("Recebido! Agora e so aguardar a aprovacao no mural.");
       setFile(null);
@@ -294,8 +400,10 @@ export default function SubmitPage() {
       setOffsetX(50);
       setOffsetY(50);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Falhou. Tente novamente.";
-      setErrMsg(message);
+      if (uploadedPath && !dbSaved) {
+        await supabase.storage.from(bucket).remove([uploadedPath]);
+      }
+      setErrMsg(formatSubmitError(error));
     } finally {
       setLoading(false);
     }
