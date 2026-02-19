@@ -156,7 +156,7 @@ export default function LivePage() {
   const ownerName = current?.display_name?.trim() || "";
   const instagram = formatHandle(current?.instagram);
   const petName = current?.pet_name?.trim() || "Shih Tzu";
-  const caption = truncateText(current?.caption, 50);
+  const caption = truncateText(current?.caption, 100);
   const cityState = formatCityState(current?.city, current?.state);
   const petAge = formatPetAge(current?.pet_age);
   const showOwnerName = ownerName && ownerName.toLowerCase() !== petName.toLowerCase();
@@ -229,7 +229,7 @@ export default function LivePage() {
                 Enviar foto
               </a>
               <a href={liveUrl} className="action-btn ghost">
-                Abrir /live (OBS)
+                Abrir live no navegador
               </a>
               <a href={ytLiveUrl} target="_blank" rel="noreferrer" className="action-btn youtube">
                 Assistir Live (YouTube)

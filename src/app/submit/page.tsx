@@ -31,7 +31,7 @@ const DEFAULT_MAX_MB = 3;
 const DEFAULT_MAX_W = 1920;
 const DEFAULT_OUTPUT_W = 1920;
 const DEFAULT_OUTPUT_H = 1080;
-const MAX_CAPTION_CHARS = 50;
+const MAX_CAPTION_CHARS = 100;
 
 function toPositiveNumber(raw: string | undefined, fallback: number) {
   const value = Number(raw);
@@ -416,7 +416,7 @@ export default function SubmitPage() {
     stateUf.trim() ? stateUf.trim().toUpperCase() : "UF",
     petAge.trim() ? `Idade: ${petAge.trim()}` : "Idade",
   ].join("  •  ");
-  const previewCaption = caption.trim() || "Descricao ate 50 caracteres";
+  const previewCaption = caption.trim() || "Descricao ate 100 caracteres";
 
   return (
     <div className="wrap">
@@ -569,7 +569,7 @@ export default function SubmitPage() {
             </div>
 
             <label className="field">
-              <span>Descricao (max 50 caracteres)</span>
+              <span>Descricao (max 100 caracteres)</span>
               <textarea
                 value={caption}
                 onChange={(e) => setCaption(e.target.value.slice(0, MAX_CAPTION_CHARS))}

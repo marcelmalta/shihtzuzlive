@@ -60,7 +60,7 @@ export default function Home() {
                   border: "1px solid rgba(255,255,255,.14)",
                 }}
               >
-                Abrir /live (OBS)
+                Abrir live no navegador
               </a>
 
               <a
