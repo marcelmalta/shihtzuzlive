@@ -302,13 +302,20 @@ export default function LivePage() {
           min-width: 0;
           display: flex;
           align-items: center;
+          width: clamp(200px, 26vw, 340px);
+          height: clamp(46px, 6.4vh, 64px);
+          border-radius: 12px;
+          overflow: hidden;
+          border: 1px solid rgba(245, 211, 122, 0.26);
+          background: rgba(0, 0, 0, 0.42);
         }
 
         .brand-logo {
-          width: clamp(158px, 26vw, 340px);
-          height: auto;
-          max-width: 58vw;
-          object-fit: contain;
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          object-position: center 44%;
+          display: block;
           filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.45));
         }
 
@@ -599,9 +606,13 @@ export default function LivePage() {
             gap: 8px;
           }
 
+          .brand {
+            width: clamp(148px, 45vw, 228px);
+            height: clamp(40px, 7.4vh, 52px);
+          }
+
           .brand-logo {
-            width: clamp(138px, 48vw, 230px);
-            max-width: 52vw;
+            object-position: center 46%;
           }
 
           .topbar-right {
@@ -695,9 +706,13 @@ export default function LivePage() {
             display: none;
           }
 
+          .brand {
+            width: clamp(132px, 52vw, 204px);
+            height: clamp(38px, 7vh, 48px);
+          }
+
           .brand-logo {
-            width: clamp(128px, 56vw, 210px);
-            max-width: 56vw;
+            object-position: center 48%;
           }
 
           .live-page {
