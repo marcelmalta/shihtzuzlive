@@ -397,32 +397,6 @@ export default function SubmitPage() {
                 />
               </label>
 
-              <label className="rangeField">
-                <span>Mover horizontal</span>
-                <input
-                  type="range"
-                  min={0}
-                  max={100}
-                  step={1}
-                  value={offsetX}
-                  onChange={(e) => setOffsetX(Number(e.target.value))}
-                  disabled={!preview || loading}
-                />
-              </label>
-
-              <label className="rangeField">
-                <span>Mover vertical</span>
-                <input
-                  type="range"
-                  min={0}
-                  max={100}
-                  step={1}
-                  value={offsetY}
-                  onChange={(e) => setOffsetY(Number(e.target.value))}
-                  disabled={!preview || loading}
-                />
-              </label>
-
               <div className="hint">
                 Sem corte preserva a foto inteira. Preencher ocupa toda a area e pode cortar bordas.
               </div>
