@@ -176,7 +176,8 @@ export default function LivePage() {
   const caption = truncateText(current?.caption, 50);
   const cityState = formatCityState(current?.city, current?.state);
   const petAge = formatPetAge(current?.pet_age);
-  const ownerCredit = [ownerName, instagram].filter(Boolean).join("  ");
+  const showOwnerName = ownerName && ownerName.toLowerCase() !== petName.toLowerCase();
+  const ownerCredit = [showOwnerName ? ownerName : "", instagram].filter(Boolean).join("  ");
 
   return (
     <main className="live-page">

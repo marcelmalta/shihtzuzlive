@@ -148,7 +148,6 @@ export default function SubmitPage() {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState("");
 
-  const [name, setName] = useState("");
   const [instagram, setInstagram] = useState("");
   const [petName, setPetName] = useState("");
   const [petAge, setPetAge] = useState("");
@@ -233,8 +232,10 @@ export default function SubmitPage() {
       return;
     }
 
-    if (!name.trim()) {
-      setErrMsg("Digite seu nome (ou apelido).");
+    const finalPetName = petName.trim();
+
+    if (!finalPetName) {
+      setErrMsg("Digite o nome do pet.");
       return;
     }
 
@@ -253,7 +254,7 @@ export default function SubmitPage() {
       });
 
       const ts = Date.now();
-      const safeName = name.trim().slice(0, 40).replace(/[^a-zA-Z0-9_-]/g, "_") || "usuario";
+      const safeName = finalPetName.slice(0, 40).replace(/[^a-zA-Z0-9_-]/g, "_") || "pet";
       const path = `pending/${ts}_${safeName}.jpg`;
 
       const upload = await supabase.storage.from(bucket).upload(path, prepared, {
@@ -267,9 +268,9 @@ export default function SubmitPage() {
       const finalCaption = caption.trim().slice(0, MAX_CAPTION_CHARS);
 
       const insert = await supabase.from("wall_photos").insert({
-        display_name: name.trim(),
+        display_name: finalPetName,
         instagram: instagram.trim() ? cleanHandle(instagram) : null,
-        pet_name: petName.trim() || null,
+        pet_name: finalPetName,
         pet_age: petAge.trim() || null,
         city: city.trim() || null,
         state: stateUf.trim() || null,
@@ -405,16 +406,6 @@ export default function SubmitPage() {
 
           <div className="form">
             <label className="field">
-              <span>Seu nome</span>
-              <input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Ex: Marcel Malta"
-                disabled={loading}
-              />
-            </label>
-
-            <label className="field">
               <span>Instagram (opcional)</span>
               <input
                 value={instagram}
@@ -425,7 +416,7 @@ export default function SubmitPage() {
             </label>
 
             <label className="field">
-              <span>Nome do pet (opcional)</span>
+              <span>Nome do pet</span>
               <input
                 value={petName}
                 onChange={(e) => setPetName(e.target.value)}
