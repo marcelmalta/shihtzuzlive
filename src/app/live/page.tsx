@@ -193,30 +193,30 @@ export default function LivePage() {
                 ) : (
                   <div className="empty-state">Aguardando fotos aprovadas...</div>
                 )}
+              </div>
+            </div>
 
-                {current && (
-                  <div className="photo-overlay">
-                    <div className="overlay-line-1">
-                      <div className="pet-main">
-                        <span className="pet-title">{petName}</span>
-                      </div>
+            {current && (
+              <div className="frame-info-card">
+                <div className="frame-info-top">
+                  <div className="pet-main">
+                    <span className="pet-title">{petName}</span>
+                  </div>
 
-                      <div className="meta-chips">
-                        {cityState ? <span className="meta-chip">{cityState}</span> : null}
-                        {petAge ? <span className="meta-chip">{petAge}</span> : null}
-                      </div>
-                    </div>
+                  <div className="meta-chips">
+                    {cityState ? <span className="meta-chip">{cityState}</span> : null}
+                    {petAge ? <span className="meta-chip">{petAge}</span> : null}
+                  </div>
+                </div>
 
-                    {(caption || ownerCredit) && (
-                      <div className="overlay-line-2">
-                        {caption ? <span className="caption">{caption}</span> : null}
-                        {ownerCredit ? <span className="owner-credit">{ownerCredit}</span> : null}
-                      </div>
-                    )}
+                {(caption || ownerCredit) && (
+                  <div className="frame-info-bottom">
+                    {caption ? <span className="caption">{caption}</span> : null}
+                    {ownerCredit ? <span className="owner-credit">{ownerCredit}</span> : null}
                   </div>
                 )}
               </div>
-            </div>
+            )}
 
             <p className="stage-note">
               Envie a foto do seu Shih Tzu em <b>/submit</b> e assista o mural em <b>/live</b> (OBS).
@@ -258,7 +258,6 @@ export default function LivePage() {
           --gold-2: #c58d2f;
           --bg-1: #090909;
           --bg-2: #111111;
-          --glass: rgba(0, 0, 0, 0.55);
           --text-main: #fff7e6;
         }
 
@@ -429,22 +428,17 @@ export default function LivePage() {
           border: 1px solid rgba(245, 211, 122, 0.22);
         }
 
-        .photo-overlay {
-          position: absolute;
-          left: 12px;
-          right: 12px;
-          bottom: 12px;
+        .frame-info-card {
           padding: 12px 15px;
           border-radius: 14px;
-          background: var(--glass);
+          background: linear-gradient(180deg, rgba(0, 0, 0, 0.74), rgba(0, 0, 0, 0.56));
           border: 1px solid rgba(245, 211, 122, 0.32);
           backdrop-filter: blur(10px);
           box-shadow: 0 14px 34px rgba(0, 0, 0, 0.56);
           color: #fff9ed;
-          text-shadow: 0 2px 5px rgba(0, 0, 0, 0.65);
         }
 
-        .overlay-line-1 {
+        .frame-info-top {
           display: flex;
           align-items: center;
           justify-content: space-between;
@@ -484,7 +478,7 @@ export default function LivePage() {
           background: rgba(0, 0, 0, 0.5);
         }
 
-        .overlay-line-2 {
+        .frame-info-bottom {
           margin-top: 8px;
           display: flex;
           align-items: center;
@@ -691,14 +685,11 @@ export default function LivePage() {
             min-height: 210px;
           }
 
-          .photo-overlay {
-            left: 8px;
-            right: 8px;
-            bottom: 8px;
+          .frame-info-card {
             padding: 10px 11px;
           }
 
-          .overlay-line-1 {
+          .frame-info-top {
             flex-direction: column;
             align-items: flex-start;
             gap: 7px;
@@ -712,7 +703,7 @@ export default function LivePage() {
             justify-content: flex-start;
           }
 
-          .overlay-line-2 {
+          .frame-info-bottom {
             flex-direction: column;
             align-items: flex-start;
             gap: 5px;

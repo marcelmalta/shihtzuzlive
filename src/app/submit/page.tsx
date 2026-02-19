@@ -445,20 +445,22 @@ export default function SubmitPage() {
 
             <div className="previewBlock">
               {preview ? (
-                <div className="previewStage" role="img" aria-label="Preview da live">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={preview}
-                    alt="Preview"
-                    className="previewImage"
-                    style={{
-                      objectFit: fitMode,
-                      objectPosition: `${offsetX}% ${offsetY}%`,
-                      transform: `scale(${zoom})`,
-                    }}
-                  />
+                <div className="previewShell">
+                  <div className="previewStage" role="img" aria-label="Preview da live">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={preview}
+                      alt="Preview"
+                      className="previewImage"
+                      style={{
+                        objectFit: fitMode,
+                        objectPosition: `${offsetX}% ${offsetY}%`,
+                        transform: `scale(${zoom})`,
+                      }}
+                    />
+                  </div>
 
-                  <div className="previewOverlay">
+                  <div className="previewInfo">
                     <div className="previewLine1">
                       <span className="previewPet">{previewPet}</span>
                       <span className="previewMeta">{previewMeta}</span>
@@ -672,20 +674,26 @@ export default function SubmitPage() {
 
         .previewBlock {
           border-radius: 18px;
-          overflow: hidden;
           border: 1px solid rgba(255, 255, 255, 0.1);
           background: rgba(0, 0, 0, 0.28);
           min-height: 260px;
           display: grid;
-          place-items: center;
+          align-content: start;
+          padding: 10px;
+        }
+
+        .previewShell {
+          width: 100%;
+          display: grid;
+          gap: 8px;
         }
 
         .previewStage {
-          position: relative;
           width: 100%;
           aspect-ratio: 16 / 9;
           background: #050505;
           overflow: hidden;
+          border-radius: 14px;
         }
 
         .previewImage {
@@ -695,11 +703,7 @@ export default function SubmitPage() {
           transition: transform 140ms ease;
         }
 
-        .previewOverlay {
-          position: absolute;
-          left: 10px;
-          right: 10px;
-          bottom: 10px;
+        .previewInfo {
           border-radius: 12px;
           padding: 9px 10px;
           background: rgba(0, 0, 0, 0.55);
@@ -713,9 +717,12 @@ export default function SubmitPage() {
           align-items: center;
           justify-content: space-between;
           gap: 10px;
+          min-width: 0;
         }
 
         .previewPet {
+          flex: 1 1 auto;
+          min-width: 0;
           font-size: 16px;
           font-weight: 900;
           color: #f5d37a;
@@ -725,9 +732,12 @@ export default function SubmitPage() {
         }
 
         .previewMeta {
+          flex: 0 0 auto;
+          max-width: 58%;
           font-size: 11px;
           font-weight: 700;
           opacity: 0.9;
+          text-align: right;
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
@@ -908,6 +918,21 @@ export default function SubmitPage() {
 
           .inlineFields {
             grid-template-columns: 1fr;
+          }
+
+          .previewLine1 {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 4px;
+          }
+
+          .previewMeta {
+            max-width: 100%;
+            text-align: left;
+          }
+
+          .previewLine2 {
+            white-space: normal;
           }
         }
       `}</style>
