@@ -58,31 +58,14 @@ export default function LivePage() {
   const submitUrl =
     process.env.NEXT_PUBLIC_SUBMIT_URL ||
     (typeof window !== "undefined" ? `${window.location.origin}/submit` : "/submit");
+  const liveUrl = typeof window !== "undefined" ? `${window.location.origin}/live` : "/live";
+  const ytLiveUrl = process.env.NEXT_PUBLIC_YOUTUBE_URL || "https://www.youtube.com/@ShihTZuz";
 
   const [queue, setQueue] = useState<WallPhoto[]>([]);
   const [current, setCurrent] = useState<WallPhoto | null>(null);
   const [imgUrl, setImgUrl] = useState("");
-  const [isDesktopQr, setIsDesktopQr] = useState(false);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  useEffect(() => {
-    const syncViewport = () => {
-      const isWide = window.matchMedia("(min-width: 821px)").matches;
-      const hasFinePointer = window.matchMedia("(pointer: fine)").matches;
-      const canHover = window.matchMedia("(hover: hover)").matches;
-      setIsDesktopQr(isWide && hasFinePointer && canHover);
-    };
-
-    syncViewport();
-    window.addEventListener("resize", syncViewport);
-    window.addEventListener("orientationchange", syncViewport);
-
-    return () => {
-      window.removeEventListener("resize", syncViewport);
-      window.removeEventListener("orientationchange", syncViewport);
-    };
-  }, []);
 
   async function getPublicUrl(path: string) {
     const { data } = supabase.storage.from(bucket).getPublicUrl(path);
@@ -181,75 +164,93 @@ export default function LivePage() {
 
   return (
     <main className="live-page">
-      <header className="live-topbar">
-        <div className="brand">
-          <Image
-            src="/brand/logo-horizontal.png"
-            alt="ShihTZuz"
-            width={360}
-            height={84}
-            className="brand-logo"
-            priority
-          />
-        </div>
+      <div className="live-shell">
+        <header className="live-topbar">
+          <div className="brand">
+            <Image
+              src="/brand/logo-horizontal.png"
+              alt="ShihTZuz"
+              width={360}
+              height={84}
+              className="brand-logo"
+              priority
+            />
+          </div>
 
-        <div className="topbar-right">
-          <a href="/submit" className="submit-btn">
-            Enviar foto
-          </a>
-          <span className="count-pill">Aprovados: {queue.length}</span>
-        </div>
-      </header>
+          <div className="topbar-right">
+            <span className="count-pill">Aprovados: {queue.length}</span>
+            <span className="timer-pill">Troca automatica: {Math.round(SLIDE_MS / 1000)}s</span>
+          </div>
+        </header>
 
-      <section className="live-stage">
-        <div className="frame-shell">
-          <div className="frame-image-wrap">
-            {imgUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={imgUrl} alt="Foto enviada para o mural ShihTzuz" className="frame-image" />
-            ) : (
-              <div className="empty-state">Aguardando fotos aprovadas...</div>
-            )}
+        <section className="live-stage">
+          <div className="stage-main">
+            <div className="frame-shell">
+              <div className="frame-image-wrap">
+                {imgUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={imgUrl} alt="Foto enviada para o mural ShihTzuz" className="frame-image" />
+                ) : (
+                  <div className="empty-state">Aguardando fotos aprovadas...</div>
+                )}
 
-            {current && (
-              <div className="photo-overlay">
-                <div className="overlay-line-1">
-                  <div className="pet-main">
-                    <span className="pet-title">{petName}</span>
-                  </div>
+                {current && (
+                  <div className="photo-overlay">
+                    <div className="overlay-line-1">
+                      <div className="pet-main">
+                        <span className="pet-title">{petName}</span>
+                      </div>
 
-                  <div className="meta-chips">
-                    {cityState ? <span className="meta-chip">{cityState}</span> : null}
-                    {petAge ? <span className="meta-chip">{petAge}</span> : null}
-                  </div>
-                </div>
+                      <div className="meta-chips">
+                        {cityState ? <span className="meta-chip">{cityState}</span> : null}
+                        {petAge ? <span className="meta-chip">{petAge}</span> : null}
+                      </div>
+                    </div>
 
-                {(caption || ownerCredit) && (
-                  <div className="overlay-line-2">
-                    {caption ? <span className="caption">{caption}</span> : null}
-                    {ownerCredit ? <span className="owner-credit">{ownerCredit}</span> : null}
+                    {(caption || ownerCredit) && (
+                      <div className="overlay-line-2">
+                        {caption ? <span className="caption">{caption}</span> : null}
+                        {ownerCredit ? <span className="owner-credit">{ownerCredit}</span> : null}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
-            )}
-          </div>
-        </div>
-
-        {isDesktopQr && (
-          <aside className="live-qr qrOnly">
-            <div className="qr-title">Envie a foto do seu Shih Tzu</div>
-            <div className="qr-canvas-box">
-              <QRCodeCanvas value={submitUrl} size={156} includeMargin bgColor="#ffffff" fgColor="#000000" />
             </div>
-            <div className="qr-url">{submitUrl.replace(/^https?:\/\//, "")}</div>
-          </aside>
-        )}
-      </section>
 
-      <footer className="live-footer">
-        <span>OBS Browser Source: /live</span>
-        <span>Troca automatica: {Math.round(SLIDE_MS / 1000)}s</span>
-      </footer>
+            <p className="stage-note">
+              Envie a foto do seu Shih Tzu em <b>/submit</b> e assista o mural em <b>/live</b> (OBS).
+            </p>
+          </div>
+
+          <aside className="live-side">
+            <div className="action-grid">
+              <a href="/submit" className="action-btn gold">
+                Enviar foto
+              </a>
+              <a href={liveUrl} className="action-btn ghost">
+                Abrir /live (OBS)
+              </a>
+              <a href={ytLiveUrl} target="_blank" rel="noreferrer" className="action-btn youtube">
+                Assistir Live (YouTube)
+              </a>
+            </div>
+
+            <div className="live-qr">
+              <div className="qr-title">Envie a foto do seu Shih Tzu</div>
+              <div className="qr-canvas-box">
+                <QRCodeCanvas value={submitUrl} size={148} includeMargin bgColor="#ffffff" fgColor="#000000" />
+              </div>
+              <div className="qr-url">{submitUrl.replace(/^https?:\/\//, "")}</div>
+            </div>
+          </aside>
+        </section>
+
+        <footer className="live-footer">
+          <span>OBS Browser Source: /live</span>
+          <span>Troca automatica: {Math.round(SLIDE_MS / 1000)}s</span>
+        </footer>
+      </div>
 
       <style jsx global>{`
         :root {
@@ -269,32 +270,48 @@ export default function LivePage() {
         body {
           margin: 0;
           width: 100%;
-          height: 100%;
+          min-height: 100%;
           background: #000;
         }
 
         .live-page {
-          width: 100vw;
-          height: 100vh;
-          overflow: hidden;
+          width: 100%;
+          min-height: 100dvh;
+          padding: clamp(8px, 1.5vw, 18px);
           color: var(--text-main);
-          display: grid;
-          grid-template-rows: 76px 1fr 42px;
+          display: flex;
+          align-items: stretch;
+          justify-content: center;
           background:
-            radial-gradient(80% 120% at 8% -5%, rgba(245, 211, 122, 0.12) 0%, rgba(0, 0, 0, 0) 55%),
-            radial-gradient(80% 120% at 100% 0%, rgba(197, 141, 47, 0.08) 0%, rgba(0, 0, 0, 0) 50%),
+            radial-gradient(90% 90% at 10% 0%, rgba(245, 211, 122, 0.12) 0%, rgba(0, 0, 0, 0) 55%),
+            radial-gradient(90% 90% at 100% 0%, rgba(197, 141, 47, 0.1) 0%, rgba(0, 0, 0, 0) 52%),
             linear-gradient(180deg, var(--bg-2) 0%, var(--bg-1) 100%);
           font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
         }
 
+        .live-shell {
+          width: min(1500px, 100%);
+          min-height: calc(100dvh - clamp(16px, 3vw, 36px));
+          display: grid;
+          grid-template-rows: auto 1fr auto;
+          border-radius: 24px;
+          overflow: hidden;
+          border: 1px solid rgba(245, 211, 122, 0.2);
+          background:
+            linear-gradient(180deg, rgba(8, 8, 8, 0.96), rgba(4, 4, 4, 0.95)),
+            radial-gradient(120% 120% at 50% -20%, rgba(245, 211, 122, 0.1), rgba(0, 0, 0, 0));
+          box-shadow: 0 28px 80px rgba(0, 0, 0, 0.6);
+        }
+
         .live-topbar {
-          padding: 0 18px;
+          min-height: 74px;
+          padding: 10px clamp(10px, 1.4vw, 18px);
           display: flex;
           align-items: center;
           justify-content: space-between;
-          gap: 14px;
-          background: linear-gradient(180deg, rgba(0, 0, 0, 0.78), rgba(0, 0, 0, 0.35));
-          border-bottom: 1px solid rgba(245, 211, 122, 0.22);
+          gap: 12px;
+          background: linear-gradient(180deg, rgba(0, 0, 0, 0.78), rgba(0, 0, 0, 0.34));
+          border-bottom: 1px solid rgba(245, 211, 122, 0.2);
           backdrop-filter: blur(8px);
           z-index: 4;
         }
@@ -303,11 +320,11 @@ export default function LivePage() {
           min-width: 0;
           display: flex;
           align-items: center;
-          width: clamp(200px, 26vw, 340px);
-          height: clamp(46px, 6.4vh, 64px);
+          width: clamp(200px, 28vw, 360px);
+          height: clamp(44px, 6.2vh, 64px);
           border-radius: 12px;
           overflow: hidden;
-          border: 1px solid rgba(245, 211, 122, 0.26);
+          border: 1px solid rgba(245, 211, 122, 0.24);
           background: rgba(0, 0, 0, 0.42);
         }
 
@@ -323,64 +340,60 @@ export default function LivePage() {
         .topbar-right {
           display: flex;
           align-items: center;
-          gap: 10px;
-          flex: 0 0 auto;
+          justify-content: flex-end;
+          gap: 8px;
+          flex-wrap: wrap;
         }
 
-        .submit-btn {
-          text-decoration: none;
-          color: #151007;
-          font-weight: 900;
-          font-size: clamp(13px, 1.1vw, 16px);
-          letter-spacing: 0.03em;
-          padding: 10px 16px;
-          border-radius: 999px;
-          border: 1px solid rgba(255, 245, 220, 0.56);
-          background: linear-gradient(135deg, var(--gold-1), var(--gold-2));
-          box-shadow: 0 14px 32px rgba(197, 141, 47, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.45);
-          transition: filter 120ms ease, transform 120ms ease;
-        }
-
-        .submit-btn:hover {
-          filter: brightness(1.06);
-          transform: translateY(-1px);
-        }
-
-        .count-pill {
-          font-size: clamp(12px, 1vw, 14px);
-          padding: 8px 12px;
+        .count-pill,
+        .timer-pill {
+          font-size: clamp(11px, 0.95vw, 14px);
+          padding: 7px 11px;
           border-radius: 999px;
           border: 1px solid rgba(255, 255, 255, 0.2);
-          background: rgba(0, 0, 0, 0.45);
+          background: rgba(0, 0, 0, 0.42);
           backdrop-filter: blur(6px);
           white-space: nowrap;
         }
 
+        .timer-pill {
+          color: rgba(255, 233, 188, 0.9);
+        }
+
         .live-stage {
-          position: relative;
           min-height: 0;
+          padding: clamp(10px, 1.3vw, 18px);
           display: grid;
-          place-items: center;
-          padding: 16px 18px 14px;
-          overflow: hidden;
+          grid-template-columns: minmax(0, 1fr) minmax(240px, 300px);
+          gap: clamp(10px, 1.2vw, 16px);
+          align-items: start;
+        }
+
+        .stage-main {
+          min-width: 0;
+          min-height: 0;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
         }
 
         .frame-shell {
-          width: min(95vw, 1660px);
-          height: min(84vh, 900px);
-          min-height: 280px;
-          border-radius: 30px;
+          width: 100%;
+          aspect-ratio: 16 / 9;
+          max-height: min(72vh, 780px);
+          min-height: 250px;
+          border-radius: 28px;
           padding: 4px;
           background: linear-gradient(
             140deg,
             rgba(245, 211, 122, 0.95) 0%,
-            rgba(236, 198, 109, 0.5) 22%,
-            rgba(170, 115, 43, 0.28) 44%,
-            rgba(245, 211, 122, 0.82) 66%,
-            rgba(197, 141, 47, 0.9) 100%
+            rgba(236, 198, 109, 0.52) 25%,
+            rgba(170, 115, 43, 0.32) 46%,
+            rgba(245, 211, 122, 0.8) 70%,
+            rgba(197, 141, 47, 0.92) 100%
           );
           box-shadow:
-            0 40px 90px rgba(0, 0, 0, 0.7),
+            0 30px 74px rgba(0, 0, 0, 0.58),
             0 0 0 1px rgba(255, 244, 214, 0.18) inset;
           position: relative;
         }
@@ -388,11 +401,11 @@ export default function LivePage() {
         .frame-image-wrap {
           width: 100%;
           height: 100%;
-          border-radius: 26px;
+          border-radius: 24px;
           background:
-            linear-gradient(180deg, rgba(13, 13, 13, 0.95), rgba(4, 4, 4, 0.92)),
+            linear-gradient(180deg, rgba(12, 12, 12, 0.95), rgba(4, 4, 4, 0.92)),
             radial-gradient(100% 100% at 50% 0%, rgba(245, 211, 122, 0.08), rgba(0, 0, 0, 0));
-          border: 1px solid rgba(255, 233, 173, 0.18);
+          border: 1px solid rgba(255, 233, 173, 0.16);
           overflow: hidden;
           position: relative;
           display: grid;
@@ -409,24 +422,24 @@ export default function LivePage() {
         .empty-state {
           padding: 14px 20px;
           border-radius: 12px;
-          font-size: clamp(18px, 2.2vw, 28px);
+          font-size: clamp(16px, 1.9vw, 26px);
           font-weight: 600;
-          color: rgba(255, 245, 225, 0.85);
-          background: rgba(0, 0, 0, 0.48);
+          color: rgba(255, 245, 225, 0.86);
+          background: rgba(0, 0, 0, 0.5);
           border: 1px solid rgba(245, 211, 122, 0.22);
         }
 
         .photo-overlay {
           position: absolute;
-          left: 14px;
-          right: 14px;
-          bottom: 14px;
-          padding: 14px 18px;
-          border-radius: 16px;
+          left: 12px;
+          right: 12px;
+          bottom: 12px;
+          padding: 12px 15px;
+          border-radius: 14px;
           background: var(--glass);
-          border: 1px solid rgba(245, 211, 122, 0.34);
+          border: 1px solid rgba(245, 211, 122, 0.32);
           backdrop-filter: blur(10px);
-          box-shadow: 0 16px 40px rgba(0, 0, 0, 0.58);
+          box-shadow: 0 14px 34px rgba(0, 0, 0, 0.56);
           color: #fff9ed;
           text-shadow: 0 2px 5px rgba(0, 0, 0, 0.65);
         }
@@ -435,7 +448,7 @@ export default function LivePage() {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          gap: 14px;
+          gap: 12px;
           min-width: 0;
         }
 
@@ -444,10 +457,10 @@ export default function LivePage() {
         }
 
         .pet-title {
-          font-size: clamp(22px, 2.8vw, 40px);
+          font-size: clamp(20px, 2.45vw, 34px);
           font-weight: 900;
           letter-spacing: 0.02em;
-          line-height: 1.02;
+          line-height: 1.04;
           color: #ffe5a4;
         }
 
@@ -461,31 +474,31 @@ export default function LivePage() {
         }
 
         .meta-chip {
-          font-size: clamp(13px, 1.1vw, 18px);
+          font-size: clamp(12px, 1vw, 16px);
           font-weight: 700;
           line-height: 1;
-          padding: 8px 11px;
+          padding: 7px 10px;
           border-radius: 999px;
-          border: 1px solid rgba(245, 211, 122, 0.6);
+          border: 1px solid rgba(245, 211, 122, 0.58);
           color: #fff2d0;
-          background: rgba(0, 0, 0, 0.48);
+          background: rgba(0, 0, 0, 0.5);
         }
 
         .overlay-line-2 {
-          margin-top: 10px;
+          margin-top: 8px;
           display: flex;
           align-items: center;
           justify-content: space-between;
-          gap: 12px;
+          gap: 10px;
           min-width: 0;
         }
 
         .caption {
           flex: 1 1 auto;
           min-width: 0;
-          font-size: clamp(15px, 1.35vw, 22px);
+          font-size: clamp(14px, 1.2vw, 20px);
           font-weight: 700;
-          line-height: 1.18;
+          line-height: 1.2;
           color: #fff6e0;
           white-space: nowrap;
           overflow: hidden;
@@ -494,8 +507,8 @@ export default function LivePage() {
 
         .owner-credit {
           flex: 0 0 auto;
-          max-width: 38%;
-          font-size: clamp(12px, 1vw, 16px);
+          max-width: 40%;
+          font-size: clamp(11px, 0.92vw, 15px);
           font-weight: 600;
           letter-spacing: 0.01em;
           color: rgba(255, 236, 194, 0.88);
@@ -504,24 +517,81 @@ export default function LivePage() {
           text-overflow: ellipsis;
         }
 
+        .stage-note {
+          margin: 0;
+          font-size: clamp(12px, 0.96vw, 15px);
+          color: rgba(255, 237, 198, 0.88);
+        }
+
+        .stage-note b {
+          color: #ffe1a0;
+        }
+
+        .live-side {
+          min-width: 0;
+          display: grid;
+          align-content: start;
+          gap: 10px;
+        }
+
+        .action-grid {
+          display: grid;
+          gap: 8px;
+        }
+
+        .action-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          min-height: 44px;
+          padding: 8px 14px;
+          border-radius: 13px;
+          text-decoration: none;
+          font-weight: 900;
+          font-size: 14px;
+          border: 1px solid transparent;
+          text-align: center;
+          transition: filter 120ms ease, transform 120ms ease;
+        }
+
+        .action-btn:hover {
+          filter: brightness(1.05);
+          transform: translateY(-1px);
+        }
+
+        .action-btn.gold {
+          color: #151007;
+          border-color: rgba(255, 245, 220, 0.55);
+          background: linear-gradient(135deg, var(--gold-1), var(--gold-2));
+          box-shadow: 0 12px 28px rgba(197, 141, 47, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+        }
+
+        .action-btn.ghost {
+          color: #ffffff;
+          border-color: rgba(255, 255, 255, 0.2);
+          background: rgba(255, 255, 255, 0.08);
+        }
+
+        .action-btn.youtube {
+          color: #ffffff;
+          border-color: rgba(255, 45, 45, 0.4);
+          background: rgba(255, 45, 45, 0.16);
+        }
+
         .live-qr {
-          position: absolute;
-          top: 18px;
-          right: 18px;
-          width: 220px;
-          padding: 12px 12px 11px;
           border-radius: 16px;
           background: rgba(0, 0, 0, 0.5);
           border: 1px solid rgba(245, 211, 122, 0.3);
           backdrop-filter: blur(8px);
           text-align: center;
-          box-shadow: 0 16px 44px rgba(0, 0, 0, 0.52);
+          box-shadow: 0 14px 36px rgba(0, 0, 0, 0.5);
+          padding: 11px;
         }
 
         .qr-title {
-          font-size: 13px;
+          font-size: 12px;
           font-weight: 800;
-          letter-spacing: 0.03em;
+          letter-spacing: 0.02em;
           margin-bottom: 8px;
           color: #ffe7af;
         }
@@ -544,7 +614,8 @@ export default function LivePage() {
         }
 
         .live-footer {
-          padding: 0 16px;
+          min-height: 38px;
+          padding: 0 14px;
           display: flex;
           align-items: center;
           justify-content: space-between;
@@ -552,136 +623,99 @@ export default function LivePage() {
           font-size: 12px;
           border-top: 1px solid rgba(245, 211, 122, 0.16);
           color: rgba(255, 236, 196, 0.86);
-          background: rgba(0, 0, 0, 0.55);
+          background: rgba(0, 0, 0, 0.56);
         }
 
-        @media (max-width: 1280px) {
-          .frame-shell {
-            height: min(82vh, 820px);
-          }
-
-          .live-qr {
-            width: 198px;
-          }
-
-          .meta-chips {
-            max-width: 48vw;
-          }
-        }
-
-        @media (max-width: 1024px) {
-          .live-page {
-            grid-template-rows: 72px 1fr 38px;
+        @media (max-width: 1180px) {
+          .live-stage {
+            grid-template-columns: minmax(0, 1fr) minmax(220px, 270px);
           }
 
           .frame-shell {
-            width: min(96vw, 1300px);
-            height: min(82vh, 760px);
-            border-radius: 24px;
+            max-height: min(66vh, 700px);
           }
+        }
 
-          .frame-image-wrap {
+        @media (max-width: 980px) {
+          .live-shell {
             border-radius: 20px;
-          }
-
-          .photo-overlay {
-            left: 10px;
-            right: 10px;
-            bottom: 10px;
-            padding: 12px 14px;
-          }
-        }
-
-        @media (max-width: 820px) {
-          .qrOnly,
-          .live-qr {
-            display: none !important;
-          }
-
-          .live-page {
-            grid-template-rows: 68px 1fr 34px;
           }
 
           .live-topbar {
-            padding: 0 10px;
-            gap: 8px;
+            min-height: 68px;
+            padding-inline: 10px;
           }
 
           .brand {
-            width: clamp(148px, 45vw, 228px);
-            height: clamp(40px, 7.4vh, 52px);
-          }
-
-          .brand-logo {
-            object-position: center 46%;
-          }
-
-          .topbar-right {
-            gap: 6px;
-          }
-
-          .submit-btn {
-            padding: 9px 12px;
-            font-size: 13px;
-          }
-
-          .count-pill {
-            font-size: 11px;
-            padding: 7px 9px;
+            width: clamp(160px, 52vw, 290px);
+            height: clamp(40px, 6vh, 54px);
           }
 
           .live-stage {
-            padding: 10px 10px 8px;
+            grid-template-columns: 1fr;
           }
 
           .frame-shell {
-            width: 100%;
-            height: 100%;
-            max-height: 100%;
-            border-radius: 20px;
-            padding: 3px;
+            aspect-ratio: 16 / 10;
+            max-height: min(56vh, 540px);
+            min-height: 230px;
+            border-radius: 22px;
           }
 
           .frame-image-wrap {
-            border-radius: 17px;
+            border-radius: 18px;
           }
 
-          .frame-image {
-            object-fit: cover;
+          .live-side {
+            grid-template-columns: minmax(0, 1fr) 220px;
+            align-items: start;
+          }
+        }
+
+        @media (max-width: 760px) {
+          .live-page {
+            padding: 8px;
+          }
+
+          .live-shell {
+            min-height: calc(100dvh - 16px);
+          }
+
+          .timer-pill {
+            display: none;
+          }
+
+          .frame-shell {
+            aspect-ratio: 4 / 3;
+            max-height: min(48vh, 430px);
+            min-height: 210px;
           }
 
           .photo-overlay {
             left: 8px;
             right: 8px;
             bottom: 8px;
-            border-radius: 14px;
-            padding: 10px 12px;
+            padding: 10px 11px;
           }
 
           .overlay-line-1 {
-            align-items: flex-start;
             flex-direction: column;
-            gap: 8px;
+            align-items: flex-start;
+            gap: 7px;
           }
 
           .pet-title {
-            font-size: clamp(20px, 6vw, 30px);
+            font-size: clamp(18px, 6vw, 28px);
           }
 
           .meta-chips {
             justify-content: flex-start;
           }
 
-          .meta-chip {
-            font-size: 12px;
-            padding: 6px 8px;
-          }
-
           .overlay-line-2 {
-            margin-top: 7px;
             flex-direction: column;
             align-items: flex-start;
-            gap: 6px;
+            gap: 5px;
           }
 
           .caption {
@@ -693,42 +727,31 @@ export default function LivePage() {
 
           .owner-credit {
             max-width: 100%;
-            font-size: 11px;
           }
 
-          .live-footer {
-            padding: 0 10px;
-            font-size: 10px;
+          .live-side {
+            grid-template-columns: 1fr;
           }
         }
 
-        @media (max-width: 540px) {
+        @media (max-width: 520px) {
           .count-pill {
             display: none;
           }
 
-          .brand {
-            width: clamp(132px, 52vw, 204px);
-            height: clamp(38px, 7vh, 48px);
+          .live-topbar {
+            min-height: 62px;
           }
 
-          .brand-logo {
-            object-position: center 48%;
+          .action-btn {
+            min-height: 40px;
+            font-size: 13px;
           }
 
-          .live-page {
-            grid-template-rows: 64px 1fr 30px;
-          }
-
-          .caption {
-            width: 100%;
-          }
-        }
-
-        @media (hover: none), (pointer: coarse) {
-          .qrOnly,
-          .live-qr {
-            display: none !important;
+          .live-footer {
+            min-height: auto;
+            padding: 6px 10px;
+            font-size: 10px;
           }
         }
       `}</style>
