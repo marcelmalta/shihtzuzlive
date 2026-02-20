@@ -23,7 +23,7 @@ const DEFAULT_SLIDE_MS = 7000;
 const ENV_SLIDE_MS = Number(process.env.NEXT_PUBLIC_SLIDE_MS);
 const SLIDE_MS =
   Number.isFinite(ENV_SLIDE_MS) && ENV_SLIDE_MS > 0 ? ENV_SLIDE_MS : DEFAULT_SLIDE_MS;
-const DEFAULT_MAX_PASSES = 5;
+const DEFAULT_MAX_PASSES = 10;
 const ENV_MAX_PASSES = Number(process.env.NEXT_PUBLIC_MAX_PASSES);
 const MAX_PASSES =
   Number.isFinite(ENV_MAX_PASSES) && ENV_MAX_PASSES > 0
