@@ -23,6 +23,12 @@ const DEFAULT_SLIDE_MS = 7000;
 const ENV_SLIDE_MS = Number(process.env.NEXT_PUBLIC_SLIDE_MS);
 const SLIDE_MS =
   Number.isFinite(ENV_SLIDE_MS) && ENV_SLIDE_MS > 0 ? ENV_SLIDE_MS : DEFAULT_SLIDE_MS;
+const DEFAULT_MAX_PASSES = 5;
+const ENV_MAX_PASSES = Number(process.env.NEXT_PUBLIC_MAX_PASSES);
+const MAX_PASSES =
+  Number.isFinite(ENV_MAX_PASSES) && ENV_MAX_PASSES > 0
+    ? Math.floor(ENV_MAX_PASSES)
+    : DEFAULT_MAX_PASSES;
 
 function formatHandle(instagram: string | null | undefined) {
   if (!instagram) return "";
@@ -66,6 +72,20 @@ export default function LivePage() {
   const [imgUrl, setImgUrl] = useState("");
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const queueRef = useRef<WallPhoto[]>([]);
+  const currentRef = useRef<WallPhoto | null>(null);
+  const shownCountRef = useRef<Map<string, number>>(new Map());
+  const exhaustedIdsRef = useRef<Set<string>>(new Set());
+
+  const isExhausted = useCallback((id: string) => {
+    if (exhaustedIdsRef.current.has(id)) return true;
+    return (shownCountRef.current.get(id) ?? 0) > MAX_PASSES;
+  }, []);
+
+  const pruneQueue = useCallback(
+    (items: WallPhoto[]) => items.filter((item) => !isExhausted(item.id)).slice(0, 120),
+    [isExhausted],
+  );
 
   async function getPublicUrl(path: string) {
     const { data } = supabase.storage.from(bucket).getPublicUrl(path);
@@ -82,10 +102,22 @@ export default function LivePage() {
 
     if (error || !data) return;
 
-    const approved = data as WallPhoto[];
+    const approved = pruneQueue(data as WallPhoto[]);
     setQueue(approved);
-    setCurrent((prev) => prev ?? approved[0] ?? null);
-  }, [supabase]);
+    setCurrent((prev) => {
+      if (!prev) return approved[0] ?? null;
+      if (isExhausted(prev.id)) return approved[0] ?? null;
+      return approved.some((item) => item.id === prev.id) ? prev : approved[0] ?? null;
+    });
+  }, [isExhausted, pruneQueue, supabase]);
+
+  useEffect(() => {
+    queueRef.current = queue;
+  }, [queue]);
+
+  useEffect(() => {
+    currentRef.current = current;
+  }, [current]);
 
   useEffect(() => {
     loadApproved();
@@ -100,12 +132,17 @@ export default function LivePage() {
           setQueue((prev) => {
             const exists = prev.some((item) => item.id === row.id);
             const next = exists ? prev.map((item) => (item.id === row.id ? row : item)) : [row, ...prev];
-            return next.slice(0, 120);
+            return pruneQueue(next);
           });
-          setCurrent((prev) => prev ?? row);
+          setCurrent((prev) => {
+            if (prev && !isExhausted(prev.id)) return prev;
+            return isExhausted(row.id) ? null : row;
+          });
           return;
         }
 
+        exhaustedIdsRef.current.delete(row.id);
+        shownCountRef.current.delete(row.id);
         setQueue((prev) => prev.filter((item) => item.id !== row.id));
         setCurrent((prev) => (prev?.id === row.id ? null : prev));
       })
@@ -115,24 +152,55 @@ export default function LivePage() {
       supabase.removeChannel(channel);
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [loadApproved, supabase]);
+  }, [isExhausted, loadApproved, pruneQueue, supabase]);
 
   useEffect(() => {
     if (timerRef.current) clearInterval(timerRef.current);
 
     timerRef.current = setInterval(() => {
-      setCurrent((prev) => {
-        if (!queue.length) return null;
-        if (!prev) return queue[0];
-        const idx = queue.findIndex((item) => item.id === prev.id);
-        return queue[(idx + 1) % queue.length] || queue[0];
-      });
+      const prevCurrent = currentRef.current;
+      const prevQueue = queueRef.current;
+      if (!prevQueue.length) {
+        if (prevCurrent) {
+          currentRef.current = null;
+          setCurrent(null);
+        }
+        return;
+      }
+
+      if (prevCurrent?.id) {
+        const shown = (shownCountRef.current.get(prevCurrent.id) ?? 0) + 1;
+        shownCountRef.current.set(prevCurrent.id, shown);
+        if (shown > MAX_PASSES) exhaustedIdsRef.current.add(prevCurrent.id);
+      }
+
+      const nextQueue = pruneQueue(prevQueue);
+      if (nextQueue.length !== prevQueue.length) {
+        queueRef.current = nextQueue;
+        setQueue(nextQueue);
+      }
+
+      if (!nextQueue.length) {
+        if (currentRef.current) {
+          currentRef.current = null;
+          setCurrent(null);
+        }
+        return;
+      }
+
+      const idx = prevCurrent ? nextQueue.findIndex((item) => item.id === prevCurrent.id) : -1;
+      const nextCurrent = idx >= 0 ? nextQueue[(idx + 1) % nextQueue.length] : nextQueue[0];
+
+      if (!currentRef.current || currentRef.current.id !== nextCurrent.id) {
+        currentRef.current = nextCurrent;
+        setCurrent(nextCurrent);
+      }
     }, SLIDE_MS);
 
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [queue]);
+  }, [pruneQueue]);
 
   useEffect(() => {
     let active = true;
@@ -155,7 +223,7 @@ export default function LivePage() {
 
   const ownerName = current?.display_name?.trim() || "";
   const instagram = formatHandle(current?.instagram);
-  const petName = current?.pet_name?.trim() || "Shih Tzu";
+  const petName = current?.pet_name?.trim() || "PET";
   const caption = truncateText(current?.caption, 100);
   const cityState = formatCityState(current?.city, current?.state);
   const petAge = formatPetAge(current?.pet_age);
