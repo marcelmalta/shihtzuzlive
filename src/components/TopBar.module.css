@@ -1,0 +1,120 @@
+.bar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 18px;
+  background: linear-gradient(180deg, rgba(10,14,20,.92) 0%, rgba(10,14,20,.78) 100%);
+  border-bottom: 1px solid rgba(255,255,255,.10);
+  backdrop-filter: blur(10px);
+}
+
+.left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 260px;
+}
+
+.logoWrap {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  background: rgba(0,0,0,.35);
+  border: 1px solid rgba(255,255,255,.10);
+  box-shadow: 0 10px 40px rgba(0,0,0,.35);
+}
+
+.brandText {
+  line-height: 1.1;
+}
+
+.title {
+  font-family: var(--font-title);
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 0.2px;
+  color: #fff;
+}
+
+.sub {
+  font-family: var(--font-ui);
+  font-size: 13px;
+  opacity: 0.86;
+  color: #e9eefc;
+  margin-top: 4px;
+}
+
+.right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.liveBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  height: 44px;
+  padding: 0 14px;
+  border-radius: 14px;
+  text-decoration: none;
+  font-weight: 900;
+  color: #fff;
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.14);
+  transition: all 0.2s;
+}
+
+.liveBtn:hover {
+  background: rgba(255,255,255,.15);
+  transform: translateY(-1px);
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: #ff2d2d;
+  box-shadow: 0 0 0 4px rgba(255,45,45,.18);
+}
+
+.submitBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 46px;
+  padding: 0 18px;
+  border-radius: 16px;
+  text-decoration: none;
+  font-weight: 950;
+  color: #0b0f14;
+  background: linear-gradient(180deg, #f6d88a 0%, #d6b25c 100%);
+  border: 1px solid rgba(0,0,0,.25);
+  box-shadow: 0 14px 40px rgba(214,178,92,.22), 0 10px 30px rgba(0,0,0,.25);
+  transition: all 0.2s;
+}
+
+.submitBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 50px rgba(214,178,92,.3);
+}
+
+/* Responsivo */
+@media (max-width: 600px) {
+  .bar {
+    height: 64px;
+    padding: 0 12px;
+  }
+  .title {
+    font-size: 19px;
+  }
+  .sub {
+    font-size: 12px;
+  }
+}
