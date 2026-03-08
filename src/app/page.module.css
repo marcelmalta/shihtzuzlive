@@ -1,141 +1,86 @@
-.page {
-  --background: #fafafa;
-  --foreground: #fff;
-
-  --text-primary: #000;
-  --text-secondary: #666;
-
-  --button-primary-hover: #383838;
-  --button-secondary-hover: #f2f2f2;
-  --button-secondary-border: #ebebeb;
-
-  display: flex;
+.hero {
   min-height: 100vh;
+  background: radial-gradient(circle at 50% 20%, rgba(246, 216, 138, 0.12) 0%, transparent 70%),
+              linear-gradient(180deg, #0a0e14 0%, #05070b 100%);
+  display: flex;
   align-items: center;
-  justify-content: center;
-  font-family: var(--font-geist-sans);
-  background-color: var(--background);
+  padding-top: 80px;
 }
 
-.main {
+.container {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 0 20px;
+  text-align: center;
+}
+
+.logo {
+  max-width: 620px;
+  margin: 0 auto 32px;
+  filter: drop-shadow(0 20px 40px rgba(246, 216, 138, 0.25));
+}
+
+.title {
+  font-family: var(--font-title);
+  font-size: clamp(42px, 6vw, 68px);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -2.5px;
+  color: #fff;
+  margin-bottom: 16px;
+}
+
+.subtitle {
+  font-family: var(--font-ui);
+  font-size: clamp(18px, 2.2vw, 24px);
+  max-width: 620px;
+  margin: 0 auto 40px;
+  color: #d4c8b0;
+  line-height: 1.45;
+}
+
+.buttons {
   display: flex;
-  min-height: 100vh;
-  width: 100%;
-  max-width: 800px;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: space-between;
-  background-color: var(--foreground);
-  padding: 120px 60px;
-}
-
-.intro {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  text-align: left;
-  gap: 24px;
-}
-
-.intro h1 {
-  max-width: 320px;
-  font-size: 40px;
-  font-weight: 600;
-  line-height: 48px;
-  letter-spacing: -2.4px;
-  text-wrap: balance;
-  color: var(--text-primary);
-}
-
-.intro p {
-  max-width: 440px;
-  font-size: 18px;
-  line-height: 32px;
-  text-wrap: balance;
-  color: var(--text-secondary);
-}
-
-.intro a {
-  font-weight: 500;
-  color: var(--text-primary);
-}
-
-.ctas {
-  display: flex;
-  flex-direction: row;
-  width: 100%;
-  max-width: 440px;
   gap: 16px;
-  font-size: 14px;
-}
-
-.ctas a {
-  display: flex;
   justify-content: center;
-  align-items: center;
-  height: 40px;
-  padding: 0 16px;
-  border-radius: 128px;
-  border: 1px solid transparent;
-  transition: 0.2s;
-  cursor: pointer;
-  width: fit-content;
-  font-weight: 500;
+  flex-wrap: wrap;
 }
 
-a.primary {
-  background: var(--text-primary);
-  color: var(--background);
-  gap: 8px;
+.btnPrimary {
+  background: linear-gradient(180deg, #f6d88a 0%, #d6b25c 100%);
+  color: #0f0a03;
+  font-weight: 900;
+  font-size: 17px;
+  padding: 16px 36px;
+  border-radius: 9999px;
+  text-decoration: none;
+  box-shadow: 0 15px 35px rgba(214, 178, 92, 0.35);
+  transition: all 0.25s;
 }
 
-a.secondary {
-  border-color: var(--button-secondary-border);
+.btnPrimary:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 45px rgba(214, 178, 92, 0.45);
 }
 
-/* Enable hover only on non-touch devices */
-@media (hover: hover) and (pointer: fine) {
-  a.primary:hover {
-    background: var(--button-primary-hover);
-    border-color: transparent;
-  }
-
-  a.secondary:hover {
-    background: var(--button-secondary-hover);
-    border-color: transparent;
-  }
+.btnSecondary {
+  background: rgba(255,255,255,0.08);
+  color: white;
+  border: 1px solid rgba(255,255,255,0.2);
+  font-weight: 700;
+  padding: 16px 28px;
+  border-radius: 9999px;
+  text-decoration: none;
+  transition: all 0.25s;
 }
 
-@media (max-width: 600px) {
-  .main {
-    padding: 48px 24px;
-  }
-
-  .intro {
-    gap: 16px;
-  }
-
-  .intro h1 {
-    font-size: 32px;
-    line-height: 40px;
-    letter-spacing: -1.92px;
-  }
+.btnSecondary:hover {
+  background: rgba(255,255,255,0.15);
 }
 
-@media (prefers-color-scheme: dark) {
-  .logo {
-    filter: invert();
-  }
-
-  .page {
-    --background: #000;
-    --foreground: #000;
-
-    --text-primary: #ededed;
-    --text-secondary: #999;
-
-    --button-primary-hover: #ccc;
-    --button-secondary-hover: #1a1a1a;
-    --button-secondary-border: #1a1a1a;
-  }
+.info {
+  margin-top: 60px;
+  font-size: 14px;
+  color: #888;
+  font-family: var(--font-ui);
 }
